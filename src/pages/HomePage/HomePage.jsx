@@ -1,26 +1,44 @@
-import styled from "styled-components"
+import styled from "styled-components";
+import axios from 'axios';
+import { Link } from "react-router-dom";
+import { useState, useEffect } from 'react';
 
 export default function HomePage() {
+
+    const [items, setItems] = useState([]);
+
+	useEffect(() => {
+
+		const promise = axios.get("https://mock-api.driven.com.br/api/v8/cineflex/movies");
+
+		promise.then(answer => {setItems(answer.data);})
+        promise.catch(error => console.log(error));
+        
+	}, []);
+
+	if(items.length === 0) {
+		return (
+            <PageContainer>
+                    <LoadingContainer>
+                        <img src="/src/assets/loading.gif" alt="Loading" />
+                    </LoadingContainer>
+            </PageContainer>
+        );
+	}
+
     return (
         <PageContainer>
             Selecione o filme
 
             <ListContainer>
-                <MovieContainer>
-                    <img src={"https://br.web.img2.acsta.net/pictures/22/05/16/17/59/5165498.jpg"} alt="poster"/>
-                </MovieContainer>
 
-                <MovieContainer>
-                    <img src={"https://br.web.img2.acsta.net/pictures/22/05/16/17/59/5165498.jpg"} alt="poster"/>
-                </MovieContainer>
+            {items.map(item => 
+                <MovieContainer data-test="movie" key={item.id} >
+                    <Link to={`/sessions/${item.id}`}>
+                    <img src={item.posterURL} alt="poster"/>
+                    </Link>
+                </MovieContainer>)}
 
-                <MovieContainer>
-                    <img src={"https://br.web.img2.acsta.net/pictures/22/05/16/17/59/5165498.jpg"} alt="poster"/>
-                </MovieContainer>
-
-                <MovieContainer>
-                    <img src={"https://br.web.img2.acsta.net/pictures/22/05/16/17/59/5165498.jpg"} alt="poster"/>
-                </MovieContainer>
             </ListContainer>
 
         </PageContainer>
@@ -58,4 +76,13 @@ const MovieContainer = styled.div`
         width: 130px;
         height: 190px;
     }
+`
+const LoadingContainer = styled.div`
+    width:441px;
+    height:291px;
+    padding-top:125px;
+
+    display: flex;
+    justify-content:center;
+    align-items:center
 `

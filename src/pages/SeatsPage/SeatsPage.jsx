@@ -1,51 +1,125 @@
-import styled from "styled-components"
+import styled from "styled-components";
+import axios from 'axios';
+import { Fragment } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
 
-export default function SeatsPage() {
+export default function SeatsPage(props) {
+
+    const [items, setItems] = useState([]);
+    const [available, setAvailable] = useState({});
+    const {cpf, setCpf, name, setName, setId, setSelectedIds} = props;
+    const { idSession } = useParams();
+    const navigate = useNavigate();
+
+	useEffect(() => {
+
+        setName("");
+        setCpf("");
+
+        const url = `https://mock-api.driven.com.br/api/v8/cineflex/showtimes/${idSession}/seats`;
+
+        const promise = axios.get(url);
+
+		promise.then(answer => {setItems(answer.data);})
+        promise.catch(error => console.log(error));
+        
+	}, []);
+
+	function confirmSeat (event) {
+		event.preventDefault();
+
+        setSelectedIds (Object.keys(available).map((key, i) => available[key] == "selected" ? i : null).filter(v => v != null));
+
+        if(Object.keys(available).some(key => available[key] == "selected")) {
+
+        setId(idSession);
+
+		const requisition = axios.post("https://mock-api.driven.com.br/api/v8/cineflex/seats/book-many", {ids: Object.keys(available).filter(key => available[key] == "selected"), name: name, cpf: cpf})
+
+        requisition.then(() => navigate("/success/")) 
+        requisition.catch(error => console.log(error));
+
+    }
+    }
+
+    
+	if(items.length === 0) {
+		return (
+            <PageContainer>    
+                <LoadingContainer>
+                    <img src="/src/assets/loading.gif" alt="Loading"/>
+                </LoadingContainer>
+            </PageContainer>
+        );
+	}
 
     return (
         <PageContainer>
             Selecione o(s) assento(s)
 
             <SeatsContainer>
-                <SeatItem>01</SeatItem>
-                <SeatItem>02</SeatItem>
-                <SeatItem>03</SeatItem>
-                <SeatItem>04</SeatItem>
-                <SeatItem>05</SeatItem>
-            </SeatsContainer>
 
+            {items.seats.map(seat => 
+
+            {    
+                if (!available.hasOwnProperty(seat.id)) {
+                    setAvailable(prevState => ({
+                        ...prevState,
+                        [seat.id]: seat.isAvailable
+                    }));
+                }
+    
+                function toggleSelect() {
+                    setAvailable(prevState => ({
+                        ...prevState,
+                        [seat.id]: prevState[seat.id] === 'selected' ? true : prevState[seat.id] ? 'selected' : false
+                    }));
+                }
+                
+                return (
+                    <Fragment key={seat.id}>
+                        <SeatItem data-test="seat" onClick= {toggleSelect} key={seat.id} isAvailable={available[seat.id]} >{seat.name}</SeatItem>
+                    </Fragment>
+                );
+            })}
+
+            </SeatsContainer>
+					
             <CaptionContainer>
                 <CaptionItem>
-                    <CaptionCircle />
+                    <CaptionCircle isAvailable={'selected'}/>
                     Selecionado
                 </CaptionItem>
                 <CaptionItem>
-                    <CaptionCircle />
+                    <CaptionCircle isAvailable={true}/>
                     Disponível
                 </CaptionItem>
                 <CaptionItem>
-                    <CaptionCircle />
+                    <CaptionCircle isAvailable={false}/>
                     Indisponível
                 </CaptionItem>
             </CaptionContainer>
 
-            <FormContainer>
-                Nome do Comprador:
-                <input placeholder="Digite seu nome..." />
+            <FormContainer onSubmit={confirmSeat}>
 
-                CPF do Comprador:
-                <input placeholder="Digite seu CPF..." />
+            <label htmlFor='name'>Nome do Comprador:</label>
+                <input data-test="client-name" type="text" id='name' placeholder="Digite seu nome..." value={name} required onChange={e => setName(e.target.value)}/>
 
-                <button>Reservar Assento(s)</button>
+            <label htmlFor='cpf'>CPF do Comprador:</label>
+                <input data-test="client-cpf" type="text" id='cpf' placeholder="Digite seu CPF..." value={cpf} required minLength={14} maxLength={14} onChange={e => setCpf(e.target.value)}/>
+
+                <button data-test="book-seat-btn" type="submit" >Reservar Assento(s)</button>
+
             </FormContainer>
 
-            <FooterContainer>
+            <FooterContainer data-test="footer">
                 <div>
-                    <img src={"https://br.web.img2.acsta.net/pictures/22/05/16/17/59/5165498.jpg"} alt="poster" />
+                    <img src={items.movie.posterURL} alt="poster" />
                 </div>
                 <div>
-                    <p>Tudo em todo lugar ao mesmo tempo</p>
-                    <p>Sexta - 14h00</p>
+                    <p>{items.movie.title}</p>
+                    <p>{items.day.weekday} - {items.name} </p>
                 </div>
             </FooterContainer>
 
@@ -74,7 +148,7 @@ const SeatsContainer = styled.div`
     justify-content: center;
     margin-top: 20px;
 `
-const FormContainer = styled.div`
+const FormContainer = styled.form`
     width: calc(100vw - 40px); 
     display: flex;
     flex-direction: column;
@@ -96,8 +170,8 @@ const CaptionContainer = styled.div`
     margin: 20px;
 `
 const CaptionCircle = styled.div`
-    border: 1px solid blue;         // Essa cor deve mudar
-    background-color: lightblue;    // Essa cor deve mudar
+    border: 1px solid ${seat => seat.isAvailable === 'selected' ? '#0E7D71' : seat.isAvailable ? '#7B8B99' : '#F7C52B'};
+    background-color: ${seat => seat.isAvailable === 'selected' ? '#1AAE9E' : seat.isAvailable ? '#C3CFD9' : '#FBE192'};
     height: 25px;
     width: 25px;
     border-radius: 25px;
@@ -113,8 +187,8 @@ const CaptionItem = styled.div`
     font-size: 12px;
 `
 const SeatItem = styled.div`
-    border: 1px solid blue;         // Essa cor deve mudar
-    background-color: lightblue;    // Essa cor deve mudar
+    border: 1px solid ${seat => seat.isAvailable === 'selected' ? '#0E7D71' : seat.isAvailable ? '#7B8B99' : '#F7C52B'};
+    background-color: ${seat => seat.isAvailable === 'selected' ? '#1AAE9E' : seat.isAvailable ? '#C3CFD9' : '#FBE192'};
     height: 25px;
     width: 25px;
     border-radius: 25px;
@@ -163,3 +237,13 @@ const FooterContainer = styled.div`
         }
     }
 `
+
+const LoadingContainer = styled.div`
+    width:441px;
+    height:291px;
+    padding-top:125px;
+
+    display: flex;
+    justify-content:center;
+    align-items:center
+`;

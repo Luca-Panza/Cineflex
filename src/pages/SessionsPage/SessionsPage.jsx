@@ -1,42 +1,60 @@
-import styled from "styled-components"
+import styled from "styled-components";
+import axios from 'axios';
+import { Link, useParams } from "react-router-dom";
+import { useState, useEffect } from 'react';
 
 export default function SessionsPage() {
+
+    const [items, setItems] = useState([]);
+    const { idMovie } = useParams();
+
+	useEffect(() => {
+
+        const url = `https://mock-api.driven.com.br/api/v8/cineflex/movies/${idMovie}/showtimes`;
+
+        const promise = axios.get(url);
+
+		promise.then(answer => {setItems(answer.data);})
+        promise.catch(error => console.log(error));
+        
+	}, []);
+
+
+	if(items.length === 0) {
+		return (
+            <PageContainer>    
+                <LoadingContainer>
+                    <img src="/src/assets/loading.gif" alt="Loading"/>
+                </LoadingContainer>
+            </PageContainer>
+        );
+	} 
 
     return (
         <PageContainer>
             Selecione o horário
-            <div>
-                <SessionContainer>
-                    Sexta - 03/03/2023
-                    <ButtonsContainer>
-                        <button>14:00</button>
-                        <button>15:00</button>
-                    </ButtonsContainer>
-                </SessionContainer>
 
+            {items.days.map((day, i) =>
+            <div data-test="movie-day" key={day.id}>
                 <SessionContainer>
-                    Sexta - 03/03/2023
+                    {day.weekday} - {day.date}
                     <ButtonsContainer>
-                        <button>14:00</button>
-                        <button>15:00</button>
-                    </ButtonsContainer>
-                </SessionContainer>
-
-                <SessionContainer>
-                    Sexta - 03/03/2023
-                    <ButtonsContainer>
-                        <button>14:00</button>
-                        <button>15:00</button>
+                    {day.showtimes.map((showtime, i) => (
+                        <Link data-test="showtime" to={`/seats/${showtime.id}`} key={showtime.id}>
+                            <button>{showtime.name}</button>
+                        </Link>
+                    ))}
                     </ButtonsContainer>
                 </SessionContainer>
             </div>
+            )}
 
-            <FooterContainer>
+            <FooterContainer data-test="footer">
                 <div>
-                    <img src={"https://br.web.img2.acsta.net/pictures/22/05/16/17/59/5165498.jpg"} alt="poster" />
+                    <img src={items.posterURL} alt="poster" />
                 </div>
                 <div>
-                    <p>Tudo em todo lugar ao mesmo tempo</p>
+                    <p>{items.title}</p>
                 </div>
             </FooterContainer>
 
@@ -55,7 +73,7 @@ const PageContainer = styled.div`
     padding-bottom: 120px;
     padding-top: 70px;
     div {
-        margin-top: 20px;
+        margin-top: 15px;
     }
 `
 const SessionContainer = styled.div`
@@ -73,10 +91,23 @@ const ButtonsContainer = styled.div`
     margin: 20px 0;
     button {
         margin-right: 20px;
+        cursor: pointer;
     }
     a {
         text-decoration: none;
     }
+    a:not(.button-link) {
+        cursor: default;
+    }
+`
+const LoadingContainer = styled.div`
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 `
 const FooterContainer = styled.div`
     width: 100%;
