@@ -14,7 +14,7 @@
 
 Cineflex is a React-based application for cinema seat selection. It offers an intuitive interface for users to choose movies, sessions, and seats, seamlessly integrating with styled-components for a refined user experience.
 
-Deployment on Vercel: <a href="cineflex-green-chi.vercel.app/" target="_blank">Cineflex</a>
+Deployment on Vercel: <a href="https://cineflex-green-chi.vercel.app/" target="_blank">Cineflex</a>
 
 
 ***
